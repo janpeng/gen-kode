@@ -1,0 +1,66 @@
+#!/bin/usr/python
+#append adds a element to the list - use to build list of lists
+#extend just extends the element, use to increase the list
+
+def les_splitt():
+    fil_inn = 'revisor_varefordeling_v2.dat'
+    data = open(fil_inn, 'r')
+    impeks, fra_til, revisor = range(0, 3)
+    fil_ut = ''
+    liste_endelig = []
+    liste_temp = ['', [], '']
+
+    for linje in data:
+        try:
+            liste = linje.rstrip().split(';')
+            if liste[impeks] not in ('1', '2'): 
+                continue
+    
+            liste_varenr = liste[fra_til].split(',')
+        #       fixes the new list
+            liste_temp[impeks] = liste[impeks]
+            liste_temp[fra_til] = liste_varenr
+            liste_temp[revisor] = liste[revisor]
+             #remember! python passes lists by reference!!!
+            liste_endelig.append(liste_temp[:])
+        except:
+            print 'krise'
+            continue
+    print "This is the list", liste_endelig
+    return liste_endelig
+
+def lag_kode():
+    kode = ''
+    liste_endelig = []
+    impeks, fra_til, revisor = range(0,3)
+
+    liste_endelig = les_splitt()
+    for teller in range(0, len(liste_endelig)):
+        #imptype = ' '.join(liste_endelig[teller][impeks])
+        linje_kode = "if impeks = \'%s\' and (" % (liste_endelig[teller][impeks]) 
+#        print type(linje_kode), linje_kode 
+
+        while len(liste_endelig[teller][fra_til]) > 0:	#avoid running on emty list element
+            intervall = liste_endelig[teller][fra_til].pop()
+            if '-' in intervall:
+                fra, til = intervall.split('-')
+                linje_kode = linje_kode + '( substr(varenr, 1, 2) >= \'%s\' and substr(varenr, 1,2) <= \'%s\') ' % (fra.strip(), til.strip())         
+            else:
+                fra = intervall               
+                linje_kode = linje_kode + "( substr(varenr(1, 2) = \'%s\')) " % (fra.strip())
+
+	#hvis flere elementer igjen legg til or hvis tom, legg til linjeskift
+            if len(liste_endelig[teller][fra_til]) == 0:
+                linje_kode = linje_kode + ") then revisor = %s; \n" % (liste_endelig[teller][revisor])
+            else:
+                linje_kode = linje_kode + 'or '
+        kode = kode + linje_kode
+
+        #writes code to file
+        fil = open('myfile.txt', 'w')
+        fil.write(kode)
+        fil.close()
+	
+
+#runs the program
+lag_kode()
